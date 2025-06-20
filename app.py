@@ -151,4 +151,69 @@ def main():
                 st.subheader("Song Features")
                 version_type = st.selectbox("Version Type", 
                     ["Original", "Sped Up", "Remix", "Jersey", "Instrumental"])
-                explicit = st.radio("Explicit Content", ["Yes",
+                explicit = st.radio("Explicit Content", ["Yes", "No"], horizontal=True)
+                
+                if st.form_submit_button("Predict Streams", use_container_width=True):
+                    prediction = predict_streams(
+                        release_date, 
+                        version_type, 
+                        explicit, 
+                        total_tracks, 
+                        markets
+                    )
+                    st.session_state.prediction = prediction
+        
+        # Display prediction
+        if st.session_state.prediction:
+            prediction = st.session_state.prediction
+            st.success(f"## Predicted Streams: {prediction:,.0f}")
+            
+            # Performance interpretation
+            st.subheader("Performance Forecast")
+            if prediction < 100000:
+                st.warning("**Below Average**: Likely to underperform")
+            elif prediction < 500000:
+                st.info("**Moderate Success**: Average performance expected")
+            elif prediction < 1000000:
+                st.success("**Strong Performance**: Potential popular track")
+            else:
+                st.success("**Viral Potential**: High chance of becoming a hit!")
+            
+            # Revenue estimation
+            revenue = prediction * 0.004  # $0.004 per stream
+            st.metric("Estimated Revenue", f"${revenue:,.2f}", 
+                     "Based on $0.004 per stream")
+            
+            # Strategy tips
+            st.subheader("Optimization Tips")
+            quarter = (release_date.month - 1) // 3 + 1
+            if quarter != 2:
+                st.info("💡 Release in Q2 (April-June) for 25% more streams")
+            if version_type != "Sped Up":
+                st.info("💡 Add a Sped Up version to potentially double streams")
+            if explicit == "No":
+                st.info("💡 Explicit content typically gets 60% more streams")
+    
+    with tab2:
+        st.header("Historical Performance")
+        
+        if not df.empty:
+            # Summary stats
+            st.subheader("Summary Statistics")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Total Songs", len(df))
+            col2.metric("Total Streams", f"{df['streams'].sum():,.0f}")
+            col3.metric("Avg Streams/Song", f"{df['streams'].mean():,.0f}")
+            
+            # Show data
+            st.subheader("Track Records")
+            st.dataframe(df.sort_values('streams', ascending=False))
+            
+            # Simple visualization
+            st.subheader("Stream Distribution")
+            st.bar_chart(df.set_index('track_name')['streams'])
+        else:
+            st.warning("No historical data available")
+
+if __name__ == "__main__":
+    main()
